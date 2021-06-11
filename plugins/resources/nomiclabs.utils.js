@@ -88,7 +88,10 @@ function setupHardhatNetwork(env, api, ui){
     isHardhatEVM = true;
 
     networkConfig = env.network.config;
-    configureHardhatEVMGas(networkConfig, api);
+    // coverage injects many trace code into contracts, which makes them bigger size
+    networkConfig.allowUnlimitedContractSize = true;
+    networkConfig.blockGasLimit = api.gasLimitNumber;
+    // configureHardhatEVMGas(networkConfig, api);
 
     provider = createProvider(
       networkName,
@@ -103,7 +106,7 @@ function setupHardhatNetwork(env, api, ui){
       throw new Error(ui.generate('network-fail', [networkName]))
     }
     networkConfig = env.config.networks[networkName]
-    configureNetworkGas(networkConfig, api);
+    // configureNetworkGas(networkConfig, api);
     configureHttpProvider(networkConfig, api, ui)
     provider = createProvider(networkName, networkConfig);
   }

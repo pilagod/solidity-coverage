@@ -138,7 +138,7 @@ describe('Hardhat Plugin: standard use cases', function() {
   });
 
   // hardhat-truffle5 test asserts deployment cost is greater than 20,000,000 gas
-  it('deployment cost > block gasLimit', async function() {
+  it.skip('deployment cost > block gasLimit', async function() {
     mock.install('Expensive', 'block-gas-limit.js', solcoverConfig);
     mock.hardhatSetupEnv(this);
 
