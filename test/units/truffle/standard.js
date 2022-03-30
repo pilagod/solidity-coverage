@@ -307,7 +307,7 @@ describe('Truffle Plugin: standard use cases', function() {
     truffleConfig.logger = mock.testLogger;
     truffleConfig.version = true;
 
-    const configClientVersion = "v2.12.1";
+    const configClientVersion = "v2.13.2";
 
     // Config client
     mock.installFullProject('ganache-solcoverjs');
@@ -420,6 +420,7 @@ describe('Truffle Plugin: standard use cases', function() {
     await plugin(truffleConfig);
 
     assert(
+      mock.loggerOutput.val.includes('running onPreCompile')     &&
       mock.loggerOutput.val.includes('running onServerReady')     &&
       mock.loggerOutput.val.includes('running onTestsComplete')   &&
       mock.loggerOutput.val.includes('running onCompileComplete') &&

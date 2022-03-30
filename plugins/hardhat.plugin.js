@@ -8,7 +8,7 @@ const path = require('path');
 
 const { task, types } = require("hardhat/config");
 const { HardhatPluginError } = require("hardhat/plugins")
-
+const {HARDHAT_NETWORK_RESET_EVENT} = require("hardhat/internal/constants");
 const {
   TASK_TEST,
   TASK_COMPILE,
@@ -18,12 +18,14 @@ const {
 
 // Toggled true for `coverage` task only.
 let measureCoverage = false;
-let instrumentedSources
+let configureYulOptimizer = false;
+let instrumentedSources;
+let optimizerDetails;
 
 // UI for the task flags...
 const ui = new PluginUI();
 
-task(TASK_COMPILE_SOLIDITY_GET_COMPILER_INPUT).setAction(async (_, { config }, runSuper) => {
+subtask(TASK_COMPILE_SOLIDITY_GET_COMPILER_INPUT).setAction(async (_, { config }, runSuper) => {
   const solcInput = await runSuper();
   if (measureCoverage) {
     // The source name here is actually the global name in the solc input,
@@ -40,7 +42,7 @@ task(TASK_COMPILE_SOLIDITY_GET_COMPILER_INPUT).setAction(async (_, { config }, r
 });
 
 // Solidity settings are best set here instead of the TASK_COMPILE_SOLIDITY_GET_COMPILER_INPUT task.
-task(TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE).setAction(async (_, __, runSuper) => {
+subtask(TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE).setAction(async (_, __, runSuper) => {
   const compilationJob = await runSuper();
   if (measureCoverage && typeof compilationJob === "object") {
     if (compilationJob.solidityConfig.settings === undefined) {
@@ -58,6 +60,22 @@ task(TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE).setAction(async (_, __,
     settings.metadata.useLiteralContent = false;
     // Override optimizer settings for all compilers
     settings.optimizer.enabled = false;
+
+    // This is fixes a stack too deep bug in ABIEncoderV2
+    // Experimental because not sure this works as expected across versions....
+    if (configureYulOptimizer) {
+      if (optimizerDetails === undefined) {
+        settings.optimizer.details = {
+          yul: true,
+          yulDetails: {
+            stackAllocation: true,
+          },
+        }
+      // Other configurations may work as well. This loads custom details from .solcoverjs
+      } else {
+        settings.optimizer.details = optimizerDetails;
+      }
+    }
   }
   return compilationJob;
 });
@@ -84,10 +102,15 @@ task("coverage", "Generates a code coverage report for tests")
   instrumentedSources = {};
   measureCoverage = true;
 
+  // Set a variable on the environment so other tasks can detect if this task is executing
+  env.__SOLIDITY_COVERAGE_RUNNING = true;
+
   try {
     config = nomiclabsUtils.normalizeConfig(env.config, args);
     ui = new PluginUI(config.logger.log);
     api = new API(utils.loadSolcoverJS(config));
+
+    optimizerDetails = api.solcOptimizerDetails;
 
     // Catch interrupt signals
     process.on("SIGINT", nomiclabsUtils.finish.bind(null, config, api, true));
@@ -127,6 +150,7 @@ task("coverage", "Generates a code coverage report for tests")
     ui.report('compilation', []);
 
     config.temp = args.temp;
+    configureYulOptimizer = api.config.configureYulOptimizer;
 
     // With Hardhat >= 2.0.4, everything should automatically recompile
     // after solidity-coverage corrupts the artifacts.
@@ -149,11 +173,17 @@ task("coverage", "Generates a code coverage report for tests")
     // ==============
     // Server launch
     // ==============
-    const network = nomiclabsUtils.setupHardhatNetwork(env, api, ui);
+    let network = nomiclabsUtils.setupHardhatNetwork(env, api, ui);
 
     if (network.isHardhatEVM){
       accounts = await utils.getAccountsHardhat(network.provider);
       nodeInfo = await utils.getNodeInfoHardhat(network.provider);
+
+      // Note: this only works if the reset block number is before any transactions have fired on the fork.
+      // e.g you cannot fork at block 1, send some txs (blocks 2,3,4) and reset to block 2
+      env.network.provider.on(HARDHAT_NETWORK_RESET_EVENT, () => {
+        api.attachToHardhatVM(env.network.provider);
+      });
 
       api.attachToHardhatVM(network.provider);
 

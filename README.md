@@ -55,30 +55,6 @@ npx hardhat coverage [command-options]
 
 (Additional Hardhat-specific info can be found [here][37])
 
-### Buidler [Deprecated]
-
-**Add** the plugin in `buidler.config.js` ([Buidler docs][26])
-```javascript
-usePlugin('solidity-coverage')
-
-module.exports = {
-  networks: {
-    coverage: {
-      url: 'http://localhost:8555'
-    }
-  },
-}
-```
-**Run**
-```
-npx buidler coverage --network coverage [command-options]
-```
-
-**Buidler Project Examples:**
-
-+ Simple: [buidler-metacoin][32]
-+ More complex: [MolochDao/moloch][33]
-
 ### @openzeppelin/test-environment
 
 OpenZeppelin have written their own coverage generation scripts for `test-environment` using the solidity-coverage API.
@@ -125,10 +101,14 @@ module.exports = {
 | istanbulFolder | *String* | `./coverage` |  Folder location for Istanbul coverage reports. |
 | istanbulReporter | *Array* | `['html', 'lcov', 'text', 'json']` | [Istanbul coverage reporters][2]  |
 | mocha | *Object* | `{ }` | [Mocha options][3] to merge into existing mocha config. `grep` and `invert` are useful for skipping certain tests under coverage using tags in the test descriptions.|
+| coverageContractsTemp | *String* | `.coverage_contracts` |  Temporary folder location for instrumented contracts - Note that this directory will automatically be deleted when coverage completes. |
 | onServerReady[<sup>*</sup>][14] | *Function* |   | Hook run *after* server is launched, *before* the tests execute. Useful if you need to use the Oraclize bridge or have setup scripts which rely on the server's availability. [More...][23] |
+| onPreCompile[<sup>*</sup>][14] | *Function* |   | Hook run *after* filesystem and compiler configuration is applied, *before* the compiler is run. Can be used with the other hooks to be able to generate coverage reports on non-standard / customized directory structures, as well as contracts with absolute import paths. [More...][23] |
 | onCompileComplete[<sup>*</sup>][14] | *Function* |  | Hook run *after* compilation completes, *before* tests are run. Useful if you have secondary compilation steps or need to modify built artifacts. [More...][23]|
 | onTestsComplete[<sup>*</sup>][14] | *Function* |  | Hook run *after* the tests complete, *before* Istanbul reports are generated. [More...][23]|
 | onIstanbulComplete[<sup>*</sup>][14] | *Function* |  | Hook run *after* the Istanbul reports are generated, *before* the ganache server is shut down. Useful if you need to clean resources up. [More...][23]|
+| configureYulOptimizer | *Boolean* | false | (Experimental) Setting to `true` should resolve "stack too deep" compiler errors in large projects using ABIEncoderV2 |
+| solcOptimizerDetails | *Object* | `undefined` |(Experimental) Must be used in combination with `configureYulOptimizer`. Allows you configure solc's [optimizer details][1001]. Useful if the default remedy for stack-too-deep errors doesn't work in your case (See FAQ below). |
 
 [<sup>*</sup> Advanced use][14]
 
@@ -142,6 +122,15 @@ const CoverageAPI = require('solidity-coverage/api');
 
 [Documentation available here][28].
 
+## Detecting solidity-coverage from another task
+
+If you're writing another plugin or task, it can be helpful to detect whether coverage is running or not.
+The coverage plugin sets a boolean variable on the globally injected hardhat environment object for this purpose.
+
+```
+hre.__SOLIDITY_COVERAGE_RUNNING === true
+```
+
 ## FAQ
 
 Common problems & questions:
@@ -149,9 +138,8 @@ Common problems & questions:
 + [Running in CI][7]
 + [Running out of gas][13]
 + [Running out of time][6]
++ [Running out of stack][1002] (Stack too deep)
 + [Running out of memory][5]
-+ [Why are `require` statements highlighted as branch points?][8]
-
 
 ## Example reports
 + [metacoin][9] (Istanbul HTML)
@@ -193,6 +181,14 @@ $ yarn
 + [@yxliang01](https://github.com/yxliang01)
 + [@maxsam4](https://github.com/maxsam4)
 + [@justinjmoses](https://github.com/justinjmoses)
++ [@JasoonS](https://github.com/https://github.com/JasoonS)
++ [@feuGeneA](https://github.com/https://github.com/feuGeneA)
++ [@Dylan-Kerler](https://github.com/Dylan-Kerler)
++ [@paulrberg](https://github.com/paulrberg)
++ [@adjisb](https://github.com/adjisb)
++ [@Shelvak](https://github.com/Shelvak)
++ [@rynobey](https://github.com/rynobey)
++ [@ZumZoom](https://github.com/ZumZoom)
 
 [1]: https://github.com/trufflesuite/ganache-core#options
 [2]: https://istanbul.js.org/docs/advanced/alternative-reporters/
@@ -232,4 +228,6 @@ $ yarn
 [36]: https://hardhat.org/
 [37]: https://github.com/sc-forks/solidity-coverage/blob/master/HARDHAT_README.md
 [38]: https://github.com/sindresorhus/globby#globbing-patterns
+[1001]: https://docs.soliditylang.org/en/v0.8.0/using-the-compiler.html#input-description
+[1002]: https://github.com/sc-forks/solidity-coverage/blob/master/docs/faq.md#running-out-of-stack
 

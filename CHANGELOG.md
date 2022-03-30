@@ -1,5 +1,21 @@
 # Changelog
 
+0.7.20 / 2022-02-15
+===================
+  * Remove early V7 Truffle patches  (https://github.com/sc-forks/solidity-coverage/issues/693)
+
+0.7.19 / 2022-02-09
+===================
+  * Update solidity-parser/parser to 0.14.0 - supports solidity user-defined types (https://github.com/sc-forks/solidity-coverage/issues/689)
+
+0.7.18 2022-01-17
+=================
+* Add solcOptimizerDetails option to help workaround "stack too deep" errors (https://github.com/sc-forks/solidity-coverage/issues/683)
+* Add __SOLIDITY_COVERAGE_RUNNING variable on global HH env for identifying solidity-coverage task from other tasks (https://github.com/sc-forks/solidity-coverage/issues/682)
+* Fix hardhat_reset (https://github.com/sc-forks/solidity-coverage/issues/667)
+* Add new hook and make temporary contracts directory configurable (https://github.com/sc-forks/solidity-coverage/issues/664)
+* Use internal visibility for fn level hash method defs (https://github.com/sc-forks/solidity-coverage/issues/660)
+
 0.7.16 / 2021-03-04
 ===================
   * Update @solidity-parser/parser to ^0.12.0 (and support Panic keyword in catch clauses) (https://github.com/sc-forks/solidity-coverage/issues/621)
